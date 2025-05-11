@@ -15,6 +15,8 @@ import {
     Switch,
     FormControlLabel,
     Chip,
+    Tooltip,
+    CircularProgress,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -50,6 +52,7 @@ const Tools: React.FC = () => {
         isActive: true,
     });
     const [executeArgs, setExecuteArgs] = useState<Record<string, string>>({});
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         dispatch(fetchTools());
@@ -162,6 +165,7 @@ const Tools: React.FC = () => {
                     label={params.value}
                     color={getTypeColor(params.value as ToolType)}
                     size="small"
+                    sx={{ borderRadius: 2, fontWeight: 700, fontSize: 14, px: 1.5 }}
                 />
             ),
         },
@@ -174,6 +178,7 @@ const Tools: React.FC = () => {
                     label={params.value ? 'Active' : 'Inactive'}
                     color={params.value ? 'success' : 'default'}
                     size="small"
+                    sx={{ borderRadius: 2, fontWeight: 700, fontSize: 14, px: 1.5 }}
                 />
             ),
         },
@@ -183,158 +188,292 @@ const Tools: React.FC = () => {
             flex: 1,
             renderCell: (params) => (
                 <Box>
-                    <IconButton
-                        onClick={() => handleOpenDialog(params.row)}
-                        size="small"
-                    >
-                        <EditIcon />
-                    </IconButton>
-                    <IconButton
-                        onClick={() => handleDelete(params.row.id)}
-                        size="small"
-                        color="error"
-                    >
-                        <DeleteIcon />
-                    </IconButton>
-                    <IconButton
-                        onClick={() => handleOpenExecuteDialog(params.row)}
-                        size="small"
-                        color="primary"
-                    >
-                        <ExecuteIcon />
-                    </IconButton>
+                    <Tooltip title="Edit" arrow>
+                        <IconButton onClick={() => handleOpenDialog(params.row)} size="small">
+                            <EditIcon />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete" arrow>
+                        <IconButton onClick={() => handleDelete(params.row.id)} size="small" color="error">
+                            <DeleteIcon />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Execute" arrow>
+                        <IconButton onClick={() => handleOpenExecuteDialog(params.row)} size="small" color="info">
+                            <ExecuteIcon />
+                        </IconButton>
+                    </Tooltip>
                 </Box>
             ),
         },
     ];
 
     return (
-        <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                <Typography variant="h4">Tools</Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpenDialog()}
-                >
-                    New Tool
-                </Button>
-            </Box>
+        <Box sx={{
+            minHeight: '100vh',
+            width: '100%',
+            fontFamily: 'Graphik Arabic, Roboto, Helvetica, Arial, sans-serif',
+            background: (theme) => `
+                linear-gradient(120deg, ${theme.palette.background.default} 60%, ${theme.palette.primary.main}11 100%),
+                radial-gradient(ellipse at 60% 0%, ${theme.palette.primary.main}22 0%, transparent 70%)
+            `,
+            py: { xs: 2, md: 6 },
+        }}>
+            <Box sx={{
+                maxWidth: 1400,
+                mx: 'auto',
+                px: { xs: 2, md: 4 },
+            }}>
+                {/* Header Card */}
+                <Card sx={{
+                    mb: 4,
+                    px: { xs: 2, md: 5 },
+                    py: { xs: 2, md: 4 },
+                    borderRadius: 4,
+                    boxShadow: '0 4px 32px 0 rgba(0,0,0,0.18)',
+                    background: (theme) => `rgba(30,30,30,0.85)`,
+                    backdropFilter: 'blur(10px)',
+                    border: (theme) => `1.5px solid ${theme.palette.primary.main}22`,
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    alignItems: { xs: 'flex-start', md: 'center' },
+                    justifyContent: 'space-between',
+                    gap: 2,
+                }}>
+                    <Box>
+                        <Typography
+                            variant="h4"
+                            component="h1"
+                            sx={{
+                                fontWeight: 900,
+                                color: 'primary.main',
+                                letterSpacing: 1.5,
+                                fontSize: { xs: 26, md: 34 },
+                                mb: 0.5,
+                            }}
+                        >
+                            Tools
+                        </Typography>
+                        <Typography
+                            variant="subtitle1"
+                            sx={{ color: 'text.secondary', fontWeight: 500, mb: 1 }}
+                        >
+                            Manage, execute, and organize your security tools efficiently.
+                        </Typography>
+                        <Box sx={{ height: 4, width: 48, background: 'primary.main', borderRadius: 2, mb: 1 }} />
+                    </Box>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<AddIcon />}
+                        onClick={() => handleOpenDialog()}
+                        sx={{
+                            minWidth: 180,
+                            fontWeight: 700,
+                            fontSize: 18,
+                            borderRadius: 2,
+                            boxShadow: 4,
+                            px: 3,
+                            py: 1.2,
+                            letterSpacing: 1,
+                            textTransform: 'none',
+                            transition: 'all 0.2s',
+                            background: (theme) => `linear-gradient(90deg, ${theme.palette.primary.main} 80%, ${theme.palette.secondary.main} 100%)`,
+                            '&:hover': {
+                                background: (theme) => `linear-gradient(90deg, ${theme.palette.primary.dark} 80%, ${theme.palette.secondary.dark} 100%)`,
+                                boxShadow: 8,
+                                transform: 'translateY(-2px) scale(1.04)',
+                            },
+                        }}
+                    >
+                        + New Tool
+                    </Button>
+                </Card>
 
-            <Card>
-                <DataGrid
-                    rows={tools ?? []}
-                    columns={columns}
-                    loading={loading}
-                    autoHeight
-                    initialState={{
-                        pagination: { paginationModel: { pageSize: 10, page: 0 } },
+                {/* Tools Table Card */}
+                <Card sx={{
+                    width: '100%',
+                    boxShadow: '0 4px 32px 0 rgba(0,0,0,0.18)',
+                    p: { xs: 1, md: 3 },
+                    mb: 4,
+                    borderRadius: 4,
+                    background: (theme) => `rgba(30,30,30,0.82)`,
+                    backdropFilter: 'blur(10px)',
+                    border: (theme) => `1.5px solid ${theme.palette.primary.main}22`,
+                    transition: 'box-shadow 0.3s, background 0.3s',
+                }}>
+                    <DataGrid
+                        rows={tools}
+                        columns={columns.map(col => ({ ...col, flex: col.field === 'actions' ? 0.5 : 1, minWidth: 150 }))}
+                        loading={loading}
+                        autoHeight
+                        getRowId={(row) => row.id}
+                        pageSizeOptions={[10, 25, 50]}
+                        disableRowSelectionOnClick
+                        sx={{
+                            backgroundColor: 'transparent',
+                            borderRadius: 3,
+                            fontFamily: 'Graphik Arabic, Roboto, Helvetica, Arial, sans-serif',
+                            '& .MuiDataGrid-cell': {
+                                color: 'text.primary',
+                                fontWeight: 500,
+                                fontSize: 16,
+                                borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+                                background: 'transparent',
+                            },
+                            '& .MuiDataGrid-row:nth-of-type(even)': {
+                                background: (theme) => `${theme.palette.background.default}08`,
+                            },
+                            '& .MuiDataGrid-columnHeaders': {
+                                position: 'sticky',
+                                top: 0,
+                                zIndex: 2,
+                                background: (theme) => `linear-gradient(90deg, ${theme.palette.background.paper}F7 60%, ${theme.palette.background.default}EB 100%)`,
+                                color: 'primary.main',
+                                fontWeight: 800,
+                                fontSize: 17,
+                                borderBottom: '2px solid',
+                                borderColor: 'divider',
+                                letterSpacing: 1,
+                            },
+                            '& .MuiDataGrid-footerContainer': {
+                                background: (theme) => `linear-gradient(90deg, ${theme.palette.background.paper}F7 60%, ${theme.palette.background.default}EB 100%)`,
+                                color: 'text.primary',
+                                borderTop: '1px solid',
+                                borderColor: 'divider',
+                            },
+                            '& .MuiDataGrid-row:hover': {
+                                background: (theme) => `${theme.palette.primary.main}11`,
+                                boxShadow: (theme) => `0 2px 12px 0 ${theme.palette.primary.main}22`,
+                                cursor: 'pointer',
+                            },
+                            '& .MuiDataGrid-row': {
+                                transition: 'background 0.2s, box-shadow 0.2s',
+                            },
+                            '& .MuiIconButton-root': {
+                                color: 'text.secondary',
+                                transition: 'color 0.2s, transform 0.2s',
+                                '&:hover': {
+                                    color: 'primary.main',
+                                    transform: 'scale(1.18)',
+                                },
+                            },
+                            '& .MuiDataGrid-virtualScroller': {
+                                overflowX: 'hidden',
+                            },
+                        }}
+                    />
+                </Card>
+
+                {/* Dialog/Form */}
+                <Dialog
+                    open={openDialog}
+                    onClose={handleCloseDialog}
+                    maxWidth="md"
+                    fullWidth
+                    PaperProps={{
+                        sx: {
+                            minHeight: '40vh',
+                            maxHeight: '90vh',
+                            borderRadius: 4,
+                            background: (theme) => `rgba(30,30,30,0.96)`,
+                            boxShadow: '0 8px 48px 0 rgba(0,0,0,0.28)',
+                            backdropFilter: 'blur(16px)',
+                            p: { xs: 1, md: 3 },
+                        }
                     }}
-                    pageSizeOptions={[10]}
-                    disableRowSelectionOnClick
-                />
-            </Card>
-
-            {/* Tool Creation/Edit Dialog */}
-            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-                <DialogTitle>
-                    {selectedTool ? 'Edit Tool' : 'New Tool'}
-                </DialogTitle>
-                <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        <Grid item xs={12}>
-                            <TextField
-                                fullWidth
-                                label="Name"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                fullWidth
-                                select
-                                label="Type"
-                                value={formData.type}
-                                onChange={(e) => setFormData({ ...formData, type: e.target.value as ToolType })}
-                            >
-                                <MenuItem value="reconnaissance">Reconnaissance</MenuItem>
-                                <MenuItem value="vulnerability">Vulnerability</MenuItem>
-                                <MenuItem value="exploitation">Exploitation</MenuItem>
-                                <MenuItem value="post_exploitation">Post Exploitation</MenuItem>
-                            </TextField>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                fullWidth
-                                label="Output Format"
-                                value={formData.outputFormat}
-                                onChange={(e) => setFormData({ ...formData, outputFormat: e.target.value })}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <TextField
-                                fullWidth
-                                label="Command"
-                                value={formData.command}
-                                onChange={(e) => setFormData({ ...formData, command: e.target.value })}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
+                >
+                    <DialogTitle sx={{ pb: 0 }}>
+                        <Typography variant="h5" fontWeight={900} color="primary.main">
+                            {selectedTool ? 'Edit Tool' : 'New Tool'}
+                        </Typography>
+                    </DialogTitle>
+                    <DialogContent dividers sx={{ pt: 2 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, mt: 1 }}>
+                            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                <TextField
+                                    fullWidth
+                                    label="Name"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    required
+                                    helperText="Enter a unique tool name."
+                                />
+                                <TextField
+                                    fullWidth
+                                    select
+                                    label="Type"
+                                    value={formData.type}
+                                    onChange={(e) => setFormData({ ...formData, type: e.target.value as ToolType })}
+                                    required
+                                    helperText="Select the tool type."
+                                >
+                                    <MenuItem value="reconnaissance">Reconnaissance</MenuItem>
+                                    <MenuItem value="vulnerability">Vulnerability</MenuItem>
+                                    <MenuItem value="exploitation">Exploitation</MenuItem>
+                                    <MenuItem value="post_exploitation">Post Exploitation</MenuItem>
+                                </TextField>
+                            </Box>
                             <TextField
                                 fullWidth
                                 multiline
-                                rows={4}
+                                rows={3}
                                 label="Description"
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                required
+                                helperText="Describe the tool's purpose."
                             />
-                        </Grid>
-                        <Grid item xs={12}>
+                            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                <TextField
+                                    fullWidth
+                                    label="Command"
+                                    value={formData.command}
+                                    onChange={(e) => setFormData({ ...formData, command: e.target.value })}
+                                    required
+                                    helperText="Specify the command to execute."
+                                />
+                                <TextField
+                                    fullWidth
+                                    label="Output Format"
+                                    value={formData.outputFormat}
+                                    onChange={(e) => setFormData({ ...formData, outputFormat: e.target.value })}
+                                    required
+                                    helperText="e.g., JSON, TXT, XML"
+                                />
+                            </Box>
                             <FormControlLabel
                                 control={
                                     <Switch
-                                        checked={formData.isActive}
+                                        checked={formData.isActive ?? true}
                                         onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                                        color="primary"
                                     />
                                 }
                                 label="Active"
+                                sx={{ ml: 1 }}
                             />
-                        </Grid>
-                    </Grid>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseDialog}>Cancel</Button>
-                    <Button onClick={handleSubmit} variant="contained">
-                        {selectedTool ? 'Update' : 'Create'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Tool Execution Dialog */}
-            <Dialog open={openExecuteDialog} onClose={handleCloseExecuteDialog} maxWidth="md" fullWidth>
-                <DialogTitle>Execute Tool: {selectedTool?.name}</DialogTitle>
-                <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
-                        {selectedTool && Object.entries(selectedTool.arguments).map(([key, description]) => (
-                            <Grid item xs={12} key={key}>
-                                <TextField
-                                    fullWidth
-                                    label={`${key} (${description})`}
-                                    value={executeArgs[key] || ''}
-                                    onChange={(e) => setExecuteArgs({ ...executeArgs, [key]: e.target.value })}
-                                />
-                            </Grid>
-                        ))}
-                    </Grid>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseExecuteDialog}>Cancel</Button>
-                    <Button onClick={handleExecute} variant="contained" color="primary">
-                        Execute
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                        </Box>
+                    </DialogContent>
+                    <DialogActions sx={{ p: 2, gap: 1 }}>
+                        <Button onClick={handleCloseDialog} variant="outlined">
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={async () => {
+                                setSubmitting(true);
+                                await handleSubmit();
+                                setSubmitting(false);
+                            }}
+                            variant="contained"
+                            disabled={!formData.name || !formData.type || !formData.command || submitting}
+                            startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : null}
+                        >
+                            {selectedTool ? 'Update' : 'Create'}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            </Box>
         </Box>
     );
 };
