@@ -2,15 +2,14 @@ import React from 'react';
 import {
     AppBar,
     Toolbar,
-    IconButton,
     Typography,
     Box,
     Menu,
     MenuItem,
     Avatar,
+    IconButton,
 } from '@mui/material';
 import {
-    Menu as MenuIcon,
     Notifications as NotificationsIcon,
     AccountCircle,
 } from '@mui/icons-material';
@@ -18,12 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../store/slices/userSlice';
 
-interface NavbarProps {
-    sidebarOpen: boolean;
-    onToggleSidebar: () => void;
-}
-
-const Navbar: React.FC<NavbarProps> = ({ sidebarOpen, onToggleSidebar }) => {
+const Navbar: React.FC = () => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const currentUser = useAppSelector((state) => state.users.currentUser);
     const dispatch = useAppDispatch();
@@ -62,15 +56,6 @@ const Navbar: React.FC<NavbarProps> = ({ sidebarOpen, onToggleSidebar }) => {
             }}
         >
             <Toolbar>
-                <IconButton
-                    color="inherit"
-                    aria-label="toggle sidebar"
-                    onClick={onToggleSidebar}
-                    edge="start"
-                    sx={{ mr: 2 }}
-                >
-                    <MenuIcon />
-                </IconButton>
                 <Typography
                     variant="h6"
                     noWrap

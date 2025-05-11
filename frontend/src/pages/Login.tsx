@@ -39,7 +39,7 @@ const Login: React.FC = () => {
             console.log('Attempting login with:', credentials);
             const user = await authService.login(credentials);
             console.log('Login successful:', user);
-            navigate('/operations');
+            navigate('/dashboard');
         } catch (err) {
             console.error('Login error:', err);
             setError(err instanceof Error ? err.message : 'Failed to login');

@@ -36,18 +36,12 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-    const [sidebarOpen, setSidebarOpen] = React.useState(true);
-
-    const toggleSidebar = () => {
-        setSidebarOpen(!sidebarOpen);
-    };
-
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
             <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-                <Navbar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
-                <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+                <Navbar />
+                <Sidebar open={true} onClose={() => {}} />
                 <Box
                     component="main"
                     sx={{
