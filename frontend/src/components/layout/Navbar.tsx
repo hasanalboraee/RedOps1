@@ -94,9 +94,9 @@ const Navbar: React.FC<NavbarProps> = ({ sidebarOpen, onToggleSidebar }) => {
                         {currentUser ? (
                             <Avatar
                                 sx={{ width: 32, height: 32 }}
-                                alt={currentUser.username}
+                                alt={currentUser.username || currentUser.email}
                             >
-                                {currentUser.username[0].toUpperCase()}
+                                {(currentUser.username || currentUser.email)[0].toUpperCase()}
                             </Avatar>
                         ) : (
                             <AccountCircle />

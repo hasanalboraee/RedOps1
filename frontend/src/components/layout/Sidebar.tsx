@@ -28,9 +28,8 @@ interface SidebarProps {
 }
 
 const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+    { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { text: 'Operations', icon: <SecurityIcon />, path: '/operations' },
-    { text: 'Tasks', icon: <AssignmentIcon />, path: '/tasks' },
     { text: 'Tools', icon: <BuildIcon />, path: '/tools' },
     { text: 'Team', icon: <GroupIcon />, path: '/team' },
     { text: 'Reports', icon: <AssessmentIcon />, path: '/reports' },

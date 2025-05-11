@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import {
     Box,
     Button,
@@ -13,6 +14,9 @@ import {
     TextField,
     Typography,
     Chip,
+    Autocomplete,
+    Alert,
+    Paper,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -20,7 +24,8 @@ import {
     Delete as DeleteIcon,
     Visibility as ViewIcon,
 } from '@mui/icons-material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid } from '@mui/x-data-grid';
+import type { GridColDef } from '@mui/x-data-grid';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
     fetchTasks,
@@ -30,12 +35,22 @@ import {
     fetchTasksByOperation,
 } from '../store/slices/taskSlice';
 import { fetchOperations } from '../store/slices/operationSlice';
-import { Task, TaskStatus, OperationPhase } from '../types/models';
+import { fetchUsers } from '../store/slices/userSlice';
+import type { Task, TaskStatus, OperationPhase, User } from '../types/models';
+import axios from 'axios';
+
+const mitreOptions = [
+    'T1001', 'T1002', 'T1003', 'T1004', 'T1005', // ... add more as needed
+];
+const owaspOptions = [
+    'A01:2021', 'A02:2021', 'A03:2021', 'A04:2021', // ... add more as needed
+];
 
 const Tasks: React.FC = () => {
     const dispatch = useAppDispatch();
-    const { tasks, loading } = useAppSelector((state) => state.tasks);
+    const { tasks, loading, error } = useAppSelector((state) => state.tasks);
     const { operations } = useAppSelector((state) => state.operations);
+    const { users: allUsers, loading: usersLoading } = useAppSelector((state) => state.users);
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [selectedOperation, setSelectedOperation] = useState<string>('');
@@ -43,18 +58,26 @@ const Tasks: React.FC = () => {
         title: '',
         description: '',
         operationId: '',
-        assignedTo: '',
+        assignedTo: null as unknown as User,
         status: 'pending',
         phase: 'reconnaissance',
         mitreId: '',
         owaspId: '',
         results: '',
         tools: [],
+        startDate: new Date().toISOString(),
+        endDate: '',
     });
+    const [tools, setTools] = useState<any[]>([]);
+    const [formError, setFormError] = useState<string | null>(null);
+    const { id: operationId, taskId } = useParams<{ id: string; taskId: string }>();
 
     useEffect(() => {
         dispatch(fetchTasks());
         dispatch(fetchOperations());
+        dispatch(fetchUsers());
+        // Fetch tools for the tool selection dropdown
+        axios.get('http://localhost:8080/api/tools').then(res => setTools(res.data));
     }, [dispatch]);
 
     useEffect(() => {
@@ -65,7 +88,24 @@ const Tasks: React.FC = () => {
         }
     }, [dispatch, selectedOperation]);
 
+    useEffect(() => {
+        if (operationId && taskId) {
+            // Fetch specific task details
+            const fetchTaskDetails = async () => {
+                try {
+                    const response = await axios.get(`${API_URL}/tasks/${taskId}`);
+                    setSelectedTask(response.data);
+                    setFormData(response.data);
+                } catch (error) {
+                    console.error('Error fetching task details:', error);
+                }
+            };
+            fetchTaskDetails();
+        }
+    }, [operationId, taskId]);
+
     const handleOpenDialog = (task?: Task) => {
+        setFormError(null);
         if (task) {
             setSelectedTask(task);
             setFormData(task);
@@ -75,13 +115,15 @@ const Tasks: React.FC = () => {
                 title: '',
                 description: '',
                 operationId: selectedOperation || '',
-                assignedTo: '',
+                assignedTo: null as unknown as User,
                 status: 'pending',
                 phase: 'reconnaissance',
                 mitreId: '',
                 owaspId: '',
                 results: '',
                 tools: [],
+                startDate: new Date().toISOString(),
+                endDate: '',
             });
         }
         setOpenDialog(true);
@@ -90,21 +132,35 @@ const Tasks: React.FC = () => {
     const handleCloseDialog = () => {
         setOpenDialog(false);
         setSelectedTask(null);
+        setFormError(null);
     };
 
     const handleSubmit = async () => {
         try {
+            setFormError(null);
+            
+            // Validate required fields
+            if (!formData.title || !formData.description || !formData.operationId) {
+                setFormError('Please fill in all required fields');
+                return;
+            }
+
+            if (Array.isArray(formData.assignedTo)) {
+                formData.assignedTo = formData.assignedTo[0] || '';
+            }
+
             if (selectedTask) {
                 await dispatch(updateTask({
                     id: selectedTask.id,
                     task: formData,
-                }));
+                })).unwrap();
             } else {
-                await dispatch(createTask(formData as Omit<Task, 'id' | 'createdAt' | 'updatedAt'>));
+                await dispatch(createTask(formData as Omit<Task, 'id' | 'createdAt' | 'updatedAt'>)).unwrap();
             }
             handleCloseDialog();
         } catch (error) {
             console.error('Error saving task:', error);
+            setFormError(error instanceof Error ? error.message : 'Failed to save task');
         }
     };
 
@@ -138,7 +194,7 @@ const Tasks: React.FC = () => {
             headerName: 'Operation',
             flex: 1,
             valueGetter: (params) => {
-                const operation = operations.find(op => op.id === params.row.operationId);
+                const operation = operations.find((op: { id: string }) => op.id === params.row.operationId);
                 return operation ? operation.name : '';
             },
         },
@@ -187,6 +243,94 @@ const Tasks: React.FC = () => {
 
     return (
         <Box>
+            {selectedTask ? (
+                // Task Details View
+                <Card sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                        <Typography variant="h4">{selectedTask.title}</Typography>
+                        <Box>
+                            <Button
+                                variant="outlined"
+                                startIcon={<EditIcon />}
+                                onClick={() => handleOpenDialog(selectedTask)}
+                                sx={{ mr: 1 }}
+                            >
+                                Edit
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                color="error"
+                                startIcon={<DeleteIcon />}
+                                onClick={() => handleDelete(selectedTask.id)}
+                            >
+                                Delete
+                            </Button>
+                        </Box>
+                    </Box>
+                    
+                    <Grid container spacing={3}>
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle1" gutterBottom>Description</Typography>
+                            <Typography paragraph>{selectedTask.description}</Typography>
+                            
+                            <Typography variant="subtitle1" gutterBottom>Status</Typography>
+                            <Chip
+                                label={selectedTask.status}
+                                color={getStatusColor(selectedTask.status)}
+                                sx={{ mb: 2 }}
+                            />
+                            
+                            <Typography variant="subtitle1" gutterBottom>Phase</Typography>
+                            <Typography paragraph>{selectedTask.phase}</Typography>
+                        </Grid>
+                        
+                        <Grid item xs={12} md={6}>
+                            <Typography variant="subtitle1" gutterBottom>Assigned To</Typography>
+                            <Typography paragraph>
+                                {selectedTask.assignedTo ? selectedTask.assignedTo.username : 'Unassigned'}
+                            </Typography>
+                            
+                            <Typography variant="subtitle1" gutterBottom>Tools</Typography>
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                {selectedTask.tools?.map((tool: string) => (
+                                    <Chip key={tool} label={tool} size="small" />
+                                ))}
+                            </Box>
+                            
+                            {selectedTask.mitreId && (
+                                <>
+                                    <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
+                                        MITRE ID
+                                    </Typography>
+                                    <Typography paragraph>{selectedTask.mitreId}</Typography>
+                                </>
+                            )}
+                            
+                            {selectedTask.owaspId && (
+                                <>
+                                    <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
+                                        OWASP ID
+                                    </Typography>
+                                    <Typography paragraph>{selectedTask.owaspId}</Typography>
+                                </>
+                            )}
+                        </Grid>
+                        
+                        {selectedTask.results && (
+                            <Grid item xs={12}>
+                                <Typography variant="subtitle1" gutterBottom>Results</Typography>
+                                <Paper sx={{ p: 2, bgcolor: 'background.default' }}>
+                                    <Typography component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
+                                        {selectedTask.results}
+                                    </Typography>
+                                </Paper>
+                            </Grid>
+                        )}
+                    </Grid>
+                </Card>
+            ) : (
+                // Original Tasks List View
+                <>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h4">Tasks</Typography>
                 <Button
@@ -209,7 +353,7 @@ const Tasks: React.FC = () => {
                             onChange={(e) => setSelectedOperation(e.target.value)}
                         >
                             <MenuItem value="">All Operations</MenuItem>
-                            {operations.map((operation) => (
+                            {operations.map((operation: { id: string; name: string }) => (
                                 <MenuItem key={operation.id} value={operation.id}>
                                     {operation.name}
                                 </MenuItem>
@@ -225,18 +369,37 @@ const Tasks: React.FC = () => {
                     columns={columns}
                     loading={loading}
                     autoHeight
-                    pageSize={10}
-                    rowsPerPageOptions={[10]}
-                    disableSelectionOnClick
+                    initialState={{
+                        pagination: { paginationModel: { pageSize: 10, page: 0 } },
+                    }}
+                    pageSizeOptions={[10]}
+                    disableRowSelectionOnClick
                 />
             </Card>
+                </>
+            )}
 
-            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-                <DialogTitle>
+            <Dialog 
+                open={openDialog} 
+                onClose={handleCloseDialog} 
+                maxWidth="md" 
+                fullWidth
+                aria-labelledby="task-dialog-title"
+                aria-describedby="task-dialog-description"
+                disableEnforceFocus
+                disableAutoFocus
+                keepMounted
+            >
+                <DialogTitle id="task-dialog-title">
                     {selectedTask ? 'Edit Task' : 'New Task'}
                 </DialogTitle>
-                <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                <DialogContent id="task-dialog-description">
+                    {formError && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {formError}
+                        </Alert>
+                    )}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
                         <Grid item xs={12}>
                             <TextField
                                 fullWidth
@@ -253,7 +416,7 @@ const Tasks: React.FC = () => {
                                 value={formData.operationId}
                                 onChange={(e) => setFormData({ ...formData, operationId: e.target.value })}
                             >
-                                {operations.map((operation) => (
+                                {operations.map((operation: { id: string; name: string }) => (
                                     <MenuItem key={operation.id} value={operation.id}>
                                         {operation.name}
                                     </MenuItem>
@@ -298,19 +461,63 @@ const Tasks: React.FC = () => {
                             </TextField>
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <TextField
-                                fullWidth
-                                label="MITRE ID"
-                                value={formData.mitreId}
-                                onChange={(e) => setFormData({ ...formData, mitreId: e.target.value })}
+                            <Autocomplete
+                                options={mitreOptions}
+                                value={formData.mitreId || ''}
+                                onChange={(_, value) => setFormData({ ...formData, mitreId: value || '' })}
+                                renderInput={(params) => <TextField {...params} label="MITRE ATT&CK ID" fullWidth />}
+                                sx={{ mb: 2 }}
                             />
                         </Grid>
                         <Grid item xs={12} md={6}>
-                            <TextField
-                                fullWidth
-                                label="OWASP ID"
-                                value={formData.owaspId}
-                                onChange={(e) => setFormData({ ...formData, owaspId: e.target.value })}
+                            <Autocomplete
+                                options={owaspOptions}
+                                value={formData.owaspId || ''}
+                                onChange={(_, value) => setFormData({ ...formData, owaspId: value || '' })}
+                                renderInput={(params) => <TextField {...params} label="OWASP ID" fullWidth />}
+                                sx={{ mb: 2 }}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Autocomplete
+                                multiple
+                                options={tools || []}
+                                getOptionLabel={(option) => option.name}
+                                value={(tools || []).filter(tool => (formData.tools || []).includes(tool.id))}
+                                onChange={(_, value) => setFormData({ ...formData, tools: value.map(v => v.id) })}
+                                renderInput={(params) => <TextField {...params} label="Tools" fullWidth />}
+                                sx={{ mb: 2 }}
+                            />
+                        </Grid>
+                        <Grid item xs={12}>
+                            {/*
+                              Accessibility note: If you still see the 'aria-hidden' warning, ensure you do not set aria-hidden manually on #root or any ancestor. Let MUI Dialog handle accessibility.
+                            */}
+                            <Autocomplete
+                                options={allUsers || []}
+                                getOptionLabel={(option) => option.username}
+                                value={allUsers.find(user => formData.assignedTo === user.id) || null}
+                                onChange={(_, value) => setFormData({ ...formData, assignedTo: value ? value.id : '' })}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Assign To"
+                                        fullWidth
+                                        InputProps={{
+                                            ...params.InputProps,
+                                            endAdornment: (
+                                                <>
+                                                    {usersLoading ? <span style={{ marginRight: 8 }}>Loading...</span> : null}
+                                                    {params.InputProps.endAdornment}
+                                                </>
+                                            ),
+                                        }}
+                                        helperText={(!usersLoading && allUsers.length === 0) ? 'No users found' : ''}
+                                    />
+                                )}
+                                sx={{ mb: 2 }}
+                                loading={usersLoading}
+                                isOptionEqualToValue={(option, value) => option.id === value.id}
                             />
                         </Grid>
                         <Grid item xs={12}>
@@ -333,12 +540,16 @@ const Tasks: React.FC = () => {
                                 onChange={(e) => setFormData({ ...formData, results: e.target.value })}
                             />
                         </Grid>
-                    </Grid>
+                    </Box>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCloseDialog}>Cancel</Button>
-                    <Button onClick={handleSubmit} variant="contained">
-                        {selectedTask ? 'Update' : 'Create'}
+                    <Button 
+                        onClick={handleSubmit} 
+                        variant="contained"
+                        disabled={loading}
+                    >
+                        {loading ? 'Saving...' : (selectedTask ? 'Update' : 'Create')}
                     </Button>
                 </DialogActions>
             </Dialog>

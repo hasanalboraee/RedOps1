@@ -46,7 +46,40 @@ func (h *OperationHandler) GetOperation(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, operation)
+	// Fetch team lead user
+	userRepo := repositories.NewUserRepository()
+	teamLead, _ := userRepo.GetByID(operation.TeamLead)
+
+	// Fetch members
+	var members []models.User
+	for _, memberID := range operation.Members {
+		member, err := userRepo.GetByID(memberID)
+		if err == nil {
+			members = append(members, *member)
+		}
+	}
+
+	// Fetch tasks for this operation
+	taskRepo := repositories.NewTaskRepository()
+	tasks, _ := taskRepo.GetByOperationID(operation.ID)
+
+	c.JSON(http.StatusOK, gin.H{
+		"_id":           operation.ID,
+		"name":          operation.Name,
+		"type":          operation.Type,
+		"description":   operation.Description,
+		"scope":         operation.Scope,
+		"roe":           operation.ROE,
+		"team_lead":     teamLead,
+		"members":       members,
+		"current_phase": operation.CurrentPhase,
+		"status":        operation.Status,
+		"start_date":    operation.StartDate,
+		"end_date":      operation.EndDate,
+		"created_at":    operation.CreatedAt,
+		"updated_at":    operation.UpdatedAt,
+		"tasks":         tasks,
+	})
 }
 
 func (h *OperationHandler) UpdateOperation(c *gin.Context) {

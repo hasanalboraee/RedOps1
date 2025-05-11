@@ -43,7 +43,25 @@ func (r *TaskRepository) GetByID(id primitive.ObjectID) (*models.Task, error) {
 	defer cancel()
 
 	var task models.Task
-	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&task)
+	err := r.collection.FindOne(ctx, bson.M{
+		"_id": id,
+	}).Decode(&task)
+	if err != nil {
+		return nil, err
+	}
+
+	return &task, nil
+}
+
+func (r *TaskRepository) GetByOperationAndTaskID(operationID, taskID primitive.ObjectID) (*models.Task, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var task models.Task
+	err := r.collection.FindOne(ctx, bson.M{
+		"_id":          taskID,
+		"operation_id": operationID,
+	}).Decode(&task)
 	if err != nil {
 		return nil, err
 	}

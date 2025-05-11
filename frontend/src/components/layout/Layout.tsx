@@ -52,10 +52,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     component="main"
                     sx={{
                         flexGrow: 1,
-                        p: 3,
-                        mt: 8,
+                        p: { xs: 2, sm: 3, md: 4 },
+                        mt: { xs: 7, sm: 8 },
                         backgroundColor: 'background.default',
                         minHeight: '100vh',
+                        maxWidth: '100%',
+                        overflowX: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        '& > *': {
+                            maxWidth: '100%',
+                        }
                     }}
                 >
                     {children}

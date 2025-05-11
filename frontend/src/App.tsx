@@ -1,108 +1,200 @@
-import React, { Suspense } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { Provider } from 'react-redux';
-import { store } from './store';
-import Layout from './components/layout/Layout';
-import Dashboard from './pages/Dashboard.tsx';
-import Operations from './pages/Operations.tsx';
-import Tasks from './pages/Tasks.tsx';
-import Tools from './pages/Tools.tsx';
-import Team from './pages/Team.tsx';
-import Reports from './pages/Reports.tsx';
-import Login from './pages/Login.tsx';
 import { useAppSelector } from './store/hooks';
-import { CircularProgress, Box } from '@mui/material';
+import { store } from './store';
+import theme from './theme';
+import Layout from './components/layout/Layout';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Operations from './pages/Operations';
+import OperationDashboard from './pages/OperationDashboard';
+import Tasks from './pages/Tasks';
+import TaskDashboard from './pages/TaskDashboard';
+import Team from './pages/Team';
+import Tools from './pages/Tools';
+import Reports from './pages/Reports';
+import authService from './services/authService';
+import { SidebarProvider } from './components/layout/SidebarContext';
 
-const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const currentUser = useAppSelector((state) => state.users.currentUser);
-    console.log('PrivateRoute - currentUser:', currentUser);
-    return currentUser ? <>{children}</> : <Navigate to="/login" />;
+// Private route component
+const PrivateRoute: React.FC<{ element: React.ReactElement }> = ({ element }) => {
+  const user = useAppSelector((state) => state.auth.user);
+  console.log('PrivateRoute - currentUser:', user);
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return element;
 };
 
-const LoadingFallback = () => (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-    </Box>
-);
-
 const AppRoutes: React.FC = () => {
-    return (
-        <Suspense fallback={<LoadingFallback />}>
-            <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route
-                    path="/"
-                    element={
-                        <PrivateRoute>
-                            <Layout>
-                                <Dashboard />
-                            </Layout>
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/operations"
-                    element={
-                        <PrivateRoute>
-                            <Layout>
-                                <Operations />
-                            </Layout>
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/tasks"
-                    element={
-                        <PrivateRoute>
-                            <Layout>
-                                <Tasks />
-                            </Layout>
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/tools"
-                    element={
-                        <PrivateRoute>
-                            <Layout>
-                                <Tools />
-                            </Layout>
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/team"
-                    element={
-                        <PrivateRoute>
-                            <Layout>
-                                <Team />
-                            </Layout>
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/reports"
-                    element={
-                        <PrivateRoute>
-                            <Layout>
-                                <Reports />
-                            </Layout>
-                        </PrivateRoute>
-                    }
-                />
-            </Routes>
-        </Suspense>
-    );
+  useEffect(() => {
+    // Initialize auth state
+    authService.initialize();
+  }, []);
+
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="/"
+        element={
+          <PrivateRoute
+            element={
+              <SidebarProvider>
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              </SidebarProvider>
+            }
+          />
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <PrivateRoute
+            element={
+              <SidebarProvider>
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              </SidebarProvider>
+            }
+          />
+        }
+      />
+      <Route
+        path="/operations"
+        element={
+          <PrivateRoute
+            element={
+              <SidebarProvider>
+                <Layout>
+                  <Operations />
+                </Layout>
+              </SidebarProvider>
+            }
+          />
+        }
+      />
+      <Route
+        path="/operations/:id"
+        element={
+          <PrivateRoute
+            element={
+              <SidebarProvider>
+                <Layout>
+                  <OperationDashboard />
+                </Layout>
+              </SidebarProvider>
+            }
+          />
+        }
+      />
+      <Route
+        path="/operations/:id/tasks/:taskId"
+        element={
+          <PrivateRoute
+            element={
+              <SidebarProvider>
+                <Layout>
+                  <TaskDashboard />
+                </Layout>
+              </SidebarProvider>
+            }
+          />
+        }
+      />
+      <Route
+        path="/tasks"
+        element={
+          <PrivateRoute
+            element={
+              <SidebarProvider>
+                <Layout>
+                  <Tasks />
+                </Layout>
+              </SidebarProvider>
+            }
+          />
+        }
+      />
+      <Route
+        path="/tasks/:id"
+        element={
+          <PrivateRoute
+            element={
+              <SidebarProvider>
+                <Layout>
+                  <TaskDashboard />
+                </Layout>
+              </SidebarProvider>
+            }
+          />
+        }
+      />
+      <Route
+        path="/team"
+        element={
+          <PrivateRoute
+            element={
+              <SidebarProvider>
+                <Layout>
+                  <Team />
+                </Layout>
+              </SidebarProvider>
+            }
+          />
+        }
+      />
+      <Route
+        path="/tools"
+        element={
+          <PrivateRoute
+            element={
+              <SidebarProvider>
+                <Layout>
+                  <Tools />
+                </Layout>
+              </SidebarProvider>
+            }
+          />
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <PrivateRoute
+            element={
+              <SidebarProvider>
+                <Layout>
+                  <Reports />
+                </Layout>
+              </SidebarProvider>
+            }
+          />
+        }
+      />
+    </Routes>
+  );
 };
 
 const App: React.FC = () => {
-    return (
-        <Provider store={store}>
-            <Router>
-                <AppRoutes />
-            </Router>
-        </Provider>
-    );
+  return (
+    <Provider store={store}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Router>
+          <AppRoutes />
+        </Router>
+      </ThemeProvider>
+    </Provider>
+  );
 };
 
 export default App;

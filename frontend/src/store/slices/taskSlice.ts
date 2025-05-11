@@ -16,6 +16,17 @@ const initialState: TaskState = {
     error: null,
 };
 
+// Helper to ensure every task has an id field
+function mapTaskId(task: any) {
+    if (!task) return task;
+    if (task.id) return task;
+    if (task._id) return { ...task, id: task._id };
+    return task;
+}
+function mapTasksId(tasks: any[]) {
+    return (tasks || []).map(mapTaskId);
+}
+
 export const fetchTasks = createAsyncThunk(
     'tasks/fetchAll',
     async () => {
@@ -84,7 +95,7 @@ const taskSlice = createSlice({
             })
             .addCase(fetchTasks.fulfilled, (state, action) => {
                 state.loading = false;
-                state.tasks = action.payload;
+                state.tasks = mapTasksId(action.payload);
             })
             .addCase(fetchTasks.rejected, (state, action) => {
                 state.loading = false;
@@ -97,7 +108,7 @@ const taskSlice = createSlice({
             })
             .addCase(createTask.fulfilled, (state, action) => {
                 state.loading = false;
-                state.tasks.push(action.payload);
+                state.tasks.push(mapTaskId(action.payload));
             })
             .addCase(createTask.rejected, (state, action) => {
                 state.loading = false;
@@ -110,9 +121,10 @@ const taskSlice = createSlice({
             })
             .addCase(updateTask.fulfilled, (state, action) => {
                 state.loading = false;
-                const index = state.tasks.findIndex(task => task.id === action.payload.id);
+                const updated = mapTaskId(action.payload);
+                const index = state.tasks.findIndex(task => task.id === updated.id);
                 if (index !== -1) {
-                    state.tasks[index] = action.payload;
+                    state.tasks[index] = updated;
                 }
             })
             .addCase(updateTask.rejected, (state, action) => {
@@ -139,7 +151,7 @@ const taskSlice = createSlice({
             })
             .addCase(fetchTasksByOperation.fulfilled, (state, action) => {
                 state.loading = false;
-                state.tasks = action.payload;
+                state.tasks = mapTasksId(action.payload);
             })
             .addCase(fetchTasksByOperation.rejected, (state, action) => {
                 state.loading = false;
@@ -152,7 +164,7 @@ const taskSlice = createSlice({
             })
             .addCase(fetchTasksByAssignedUser.fulfilled, (state, action) => {
                 state.loading = false;
-                state.tasks = action.payload;
+                state.tasks = mapTasksId(action.payload);
             })
             .addCase(fetchTasksByAssignedUser.rejected, (state, action) => {
                 state.loading = false;

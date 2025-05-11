@@ -2,58 +2,54 @@ package routes
 
 import (
 	"redops/handlers"
+	"redops/middleware"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(router *gin.Engine, userHandler *handlers.UserHandler, operationHandler *handlers.OperationHandler, taskHandler *handlers.TaskHandler, toolHandler *handlers.ToolHandler) {
-	// User routes
-	userRoutes := router.Group("/api/users")
+func SetupRoutes(router *gin.Engine, userHandler *handlers.UserHandler, operationHandler *handlers.OperationHandler, taskHandler *handlers.TaskHandler, toolHandler *handlers.ToolHandler, resultHandler *handlers.ResultHandler) {
+	// Group all routes under /api
+	api := router.Group("/api")
 	{
-		userRoutes.POST("", userHandler.CreateUser)
-		userRoutes.GET("", userHandler.ListUsers)
-		userRoutes.GET("/:id", userHandler.GetUser)
-		userRoutes.PUT("/:id", userHandler.UpdateUser)
-		userRoutes.DELETE("/:id", userHandler.DeleteUser)
-		userRoutes.GET("/email/:email", userHandler.GetUserByEmail)
-	}
+		// Auth routes
+		api.POST("/auth/login", userHandler.Login)
+		api.POST("/auth/register", userHandler.CreateUser)
 
-	// Operation routes
-	operationRoutes := router.Group("/api/operations")
-	{
-		operationRoutes.POST("", operationHandler.CreateOperation)
-		operationRoutes.GET("", operationHandler.ListOperations)
-		operationRoutes.GET("/:id", operationHandler.GetOperation)
-		operationRoutes.PUT("/:id", operationHandler.UpdateOperation)
-		operationRoutes.DELETE("/:id", operationHandler.DeleteOperation)
-		operationRoutes.GET("/user/:user_id", operationHandler.GetOperationsByTeamMember)
-		operationRoutes.PUT("/:id/phase", operationHandler.UpdateOperationPhase)
-	}
+		// Protected routes
+		protected := api.Group("")
+		protected.Use(middleware.AuthMiddleware())
+		{
+			// User routes
+			protected.GET("/users", userHandler.ListUsers)
+			protected.GET("/users/:id", userHandler.GetUser)
+			protected.PUT("/users/:id", userHandler.UpdateUser)
+			protected.DELETE("/users/:id", userHandler.DeleteUser)
 
-	// Task routes
-	taskRoutes := router.Group("/api/tasks")
-	{
-		taskRoutes.POST("", taskHandler.CreateTask)
-		taskRoutes.GET("", taskHandler.ListTasks)
-		taskRoutes.GET("/:id", taskHandler.GetTask)
-		taskRoutes.PUT("/:id", taskHandler.UpdateTask)
-		taskRoutes.DELETE("/:id", taskHandler.DeleteTask)
-		taskRoutes.GET("/operation/:operation_id", taskHandler.GetTasksByOperation)
-		taskRoutes.GET("/user/:user_id", taskHandler.GetTasksByAssignedUser)
-		taskRoutes.PUT("/:id/status", taskHandler.UpdateTaskStatus)
-		taskRoutes.PUT("/:id/results", taskHandler.UpdateTaskResults)
-	}
+			// Operation routes
+			protected.GET("/operations", operationHandler.ListOperations)
+			protected.POST("/operations", operationHandler.CreateOperation)
+			protected.GET("/operations/:id", operationHandler.GetOperation)
+			protected.PUT("/operations/:id", operationHandler.UpdateOperation)
+			protected.DELETE("/operations/:id", operationHandler.DeleteOperation)
 
-	// Tool routes
-	toolRoutes := router.Group("/api/tools")
-	{
-		toolRoutes.POST("", toolHandler.CreateTool)
-		toolRoutes.GET("", toolHandler.ListTools)
-		toolRoutes.GET("/:id", toolHandler.GetTool)
-		toolRoutes.PUT("/:id", toolHandler.UpdateTool)
-		toolRoutes.DELETE("/:id", toolHandler.DeleteTool)
-		toolRoutes.GET("/type/:type", toolHandler.GetToolsByType)
-		toolRoutes.GET("/active", toolHandler.GetActiveTools)
-		toolRoutes.PUT("/:id/status", toolHandler.UpdateToolStatus)
+			// Task routes
+			protected.GET("/operations/:id/tasks", taskHandler.GetTasksByOperation)
+			protected.POST("/operations/:id/tasks", taskHandler.CreateTask)
+			protected.GET("/operations/:id/tasks/:taskId", taskHandler.GetTask)
+			protected.PUT("/operations/:id/tasks/:taskId", taskHandler.UpdateTask)
+			protected.DELETE("/operations/:id/tasks/:taskId", taskHandler.DeleteTask)
+
+			// Tool routes
+			protected.GET("/tools", toolHandler.ListTools)
+			protected.POST("/tools", toolHandler.CreateTool)
+			protected.GET("/tools/:id", toolHandler.GetTool)
+			protected.PUT("/tools/:id", toolHandler.UpdateTool)
+			protected.DELETE("/tools/:id", toolHandler.DeleteTool)
+
+			// Result routes
+			protected.GET("/tasks/:taskId/results", resultHandler.GetTaskResults)
+			protected.POST("/tasks/:taskId/results/import", resultHandler.ImportResults)
+			protected.DELETE("/tasks/:taskId/results", resultHandler.DeleteTaskResults)
+		}
 	}
 }

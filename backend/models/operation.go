@@ -33,7 +33,7 @@ const (
 )
 
 type Operation struct {
-	ID           primitive.ObjectID   `bson:"_id,omitempty" json:"id"`
+	ID           primitive.ObjectID   `bson:"_id,omitempty" json:"_id"`
 	Name         string               `bson:"name" json:"name"`
 	Type         OperationType        `bson:"type" json:"type"`
 	Description  string               `bson:"description" json:"description"`

@@ -33,14 +33,22 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 }
 
 func (h *TaskHandler) GetTask(c *gin.Context) {
-	id := c.Param("id")
-	objectID, err := primitive.ObjectIDFromHex(id)
+	operationId := c.Param("id")
+	taskId := c.Param("taskId")
+
+	operationObjectID, err := primitive.ObjectIDFromHex(operationId)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid operation ID format"})
 		return
 	}
 
-	task, err := h.repo.GetByID(objectID)
+	taskObjectID, err := primitive.ObjectIDFromHex(taskId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid task ID format"})
+		return
+	}
+
+	task, err := h.repo.GetByOperationAndTaskID(operationObjectID, taskObjectID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
 		return
@@ -99,7 +107,7 @@ func (h *TaskHandler) ListTasks(c *gin.Context) {
 }
 
 func (h *TaskHandler) GetTasksByOperation(c *gin.Context) {
-	operationID := c.Param("operation_id")
+	operationID := c.Param("id")
 	objectID, err := primitive.ObjectIDFromHex(operationID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid operation ID format"})

@@ -21,7 +21,8 @@ import {
     Delete as DeleteIcon,
     Person as PersonIcon,
 } from '@mui/icons-material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid } from '@mui/x-data-grid';
+import type { GridColDef } from '@mui/x-data-grid';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
     fetchUsers,
@@ -30,7 +31,7 @@ import {
     deleteUser,
 } from '../store/slices/userSlice';
 import { fetchOperations } from '../store/slices/operationSlice';
-import { User, UserRole } from '../types/models';
+import type { User, UserRole } from '../types/models';
 
 const Team: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -130,8 +131,8 @@ const Team: React.FC = () => {
             renderCell: (params) => (
                 <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                     {operations
-                        .filter(op => op.teamLead === params.row.id || op.members.includes(params.row.id))
-                        .map(op => (
+                        .filter((op: { teamLead: string; members: string[] }) => op.teamLead === params.row.id || (op.members || []).includes(params.row.id))
+                        .map((op: { id: string; name: string; teamLead: string }) => (
                             <Chip
                                 key={op.id}
                                 label={op.name}
@@ -185,9 +186,11 @@ const Team: React.FC = () => {
                     columns={columns}
                     loading={loading}
                     autoHeight
-                    pageSize={10}
-                    rowsPerPageOptions={[10]}
-                    disableSelectionOnClick
+                    initialState={{
+                        pagination: { paginationModel: { pageSize: 10, page: 0 } },
+                    }}
+                    pageSizeOptions={[10]}
+                    disableRowSelectionOnClick
                 />
             </Card>
 

@@ -97,6 +97,9 @@ const operationSlice = createSlice({
             })
             .addCase(createOperation.fulfilled, (state, action) => {
                 state.loading = false;
+                if (!state.operations) {
+                    state.operations = [];
+                }
                 state.operations.push(action.payload);
             })
             .addCase(createOperation.rejected, (state, action) => {

@@ -27,20 +27,20 @@ export type OperationPhase =
     | 'impact';
 
 export interface Operation {
-    id: string;
+    _id: string;  // MongoDB ObjectID
     name: string;
     type: OperationType;
     description: string;
     scope: string;
     roe: string;
-    teamLead: User;
-    members: User[];
-    currentPhase: OperationPhase;
+    team_lead: string;  // MongoDB ObjectID
+    members: string[];  // Array of MongoDB ObjectIDs
+    current_phase: OperationPhase;
     status: string;
-    startDate: string;
-    endDate: string;
-    createdAt: string;
-    updatedAt: string;
+    start_date: string;
+    end_date: string;
+    created_at: string;
+    updated_at: string;
 }
 
 export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'blocked';

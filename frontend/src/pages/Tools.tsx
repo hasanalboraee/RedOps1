@@ -22,7 +22,8 @@ import {
     Delete as DeleteIcon,
     PlayArrow as ExecuteIcon,
 } from '@mui/icons-material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid } from '@mui/x-data-grid';
+import type { GridColDef } from '@mui/x-data-grid';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
     fetchTools,
@@ -31,7 +32,7 @@ import {
     deleteTool,
     executeTool,
 } from '../store/slices/toolSlice';
-import { Tool, ToolType } from '../types/models';
+import type { Tool, ToolType } from '../types/models';
 
 const Tools: React.FC = () => {
     const dispatch = useAppDispatch();
@@ -222,13 +223,15 @@ const Tools: React.FC = () => {
 
             <Card>
                 <DataGrid
-                    rows={tools}
+                    rows={tools ?? []}
                     columns={columns}
                     loading={loading}
                     autoHeight
-                    pageSize={10}
-                    rowsPerPageOptions={[10]}
-                    disableSelectionOnClick
+                    initialState={{
+                        pagination: { paginationModel: { pageSize: 10, page: 0 } },
+                    }}
+                    pageSizeOptions={[10]}
+                    disableRowSelectionOnClick
                 />
             </Card>
 

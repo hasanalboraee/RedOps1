@@ -36,16 +36,16 @@ import { fetchOperations } from '../store/slices/operationSlice';
 import { fetchTasks } from '../store/slices/taskSlice';
 import { fetchTools } from '../store/slices/toolSlice';
 import { fetchUsers } from '../store/slices/userSlice';
-import { OperationPhase, TaskStatus, ToolType } from '../types/models';
+import type { OperationPhase, TaskStatus, ToolType } from '../types/models';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 const Reports: React.FC = () => {
     const dispatch = useAppDispatch();
-    const { operations } = useAppSelector((state) => state.operations);
-    const { tasks } = useAppSelector((state) => state.tasks);
-    const { tools } = useAppSelector((state) => state.tools);
-    const { users } = useAppSelector((state) => state.users);
+    const { operations = [] } = useAppSelector((state) => state.operations);
+    const { tasks = [] } = useAppSelector((state) => state.tasks);
+    const { tools = [] } = useAppSelector((state) => state.tools);
+    const { users = [] } = useAppSelector((state) => state.users);
 
     const [dateRange, setDateRange] = useState({
         start: '',
@@ -241,7 +241,7 @@ const Reports: React.FC = () => {
                                     label="Operation"
                                 >
                                     <MenuItem value="">All Operations</MenuItem>
-                                    {operations.map((op) => (
+                                    {operations?.map((op) => (
                                         <MenuItem key={op.id} value={op.id}>
                                             {op.name}
                                         </MenuItem>

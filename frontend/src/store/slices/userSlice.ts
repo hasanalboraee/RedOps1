@@ -48,6 +48,14 @@ export const deleteUser = createAsyncThunk(
     }
 );
 
+// Helper to ensure every user has an id field
+function mapUserId(user) {
+    if (!user) return user;
+    if (user.id) return user;
+    if (user._id) return { ...user, id: user._id };
+    return user;
+}
+
 const userSlice = createSlice({
     name: 'users',
     initialState,
@@ -73,7 +81,7 @@ const userSlice = createSlice({
             })
             .addCase(fetchUsers.fulfilled, (state, action) => {
                 state.loading = false;
-                state.users = action.payload;
+                state.users = action.payload.map(mapUserId);
             })
             .addCase(fetchUsers.rejected, (state, action) => {
                 state.loading = false;

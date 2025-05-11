@@ -16,6 +16,7 @@ var (
 	Operations *mongo.Collection
 	Tasks      *mongo.Collection
 	Tools      *mongo.Collection
+	Results    *mongo.Collection
 )
 
 func ConnectDB() error {
@@ -42,6 +43,7 @@ func ConnectDB() error {
 	Operations = Database.Collection("operations")
 	Tasks = Database.Collection("tasks")
 	Tools = Database.Collection("tools")
+	Results = Database.Collection("results")
 
 	log.Println("Connected to MongoDB!")
 	return nil
